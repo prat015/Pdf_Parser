@@ -1,10 +1,10 @@
 import os
-from engine import extract_text_from_pdf, parse_fields
+from engine_electricity import extract_text_from_pdf, parse_fields
 import openpyxl
 
 def process_folder(folder_path, output_excel):
     import os
-    from engine import extract_text_from_pdf, parse_fields
+    from engine_electricity import extract_text_from_pdf, parse_fields
     import openpyxl
 
     wb = openpyxl.Workbook()
