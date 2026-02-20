@@ -408,9 +408,8 @@ class BillParserApp(ctk.CTk):
 
         df_final.to_excel(output_path, index=False)
 
-        self.status_label.configure(text="Done!")
         #messagebox.showinfo("Success", f"Parsing completed successfully.\n\nOutput saved to:\n{output_path}")
-        self.after(0, lambda: messagebox.showinfo("Success", f"Parsing completed successfully.\n\nOutput saved to:\n{output_path}"))
+        self.after(0, lambda: messagebox.showinfo("Success", f"Process completed successfully.\n\nOutput saved to:\n{output_path}"))
 
         self.generated_output_path = output_path
         self.view_button.configure(state="normal")
@@ -419,8 +418,11 @@ class BillParserApp(ctk.CTk):
         #self.progress_bar.pack_forget()
         self.progress_bar.pack_forget()
         self.progress_bar.set(1)
-        self.progress_label.configure(text="100%")
+        #self.progress_label.configure(text="")
 
+        self.after(0, lambda: self.status_label.configure(text="Process Complete!"))
+        self.after(5000, lambda: self.status_label.configure(text=""))
+        self.after(0, lambda: self.progress_label.configure(text=""))
         self.after(0, lambda: self.process_button.configure(state="normal"))
         
         self.update_idletasks()

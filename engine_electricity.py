@@ -2,11 +2,6 @@ import re
 import pdfplumber
 from datetime import datetime
 
-def normalize_date(date_str):
-    try:
-        return datetime.strptime(date_str, "%d/%m/%Y").strftime("%Y-%m-%d")
-    except:
-        return ""
 
 def extract_text_from_pdf(pdf_path):
     text = ""
@@ -80,8 +75,8 @@ def parse_fields(text):
         "supplier_name": "Kenya Power Ltd",
         "account_no": account_no,
         "site_id": "",
-        "date_of_issue": normalize_date(date_of_issue),
-        "due_date": normalize_date(date_due),
+        "date_of_issue": date_of_issue,
+        "due_date": date_due,
         "qr_code": qr_code,
         "invoice_number": invoice_number,
         "total_monthly_bill": total_monthly_bill.replace(",", ""),
