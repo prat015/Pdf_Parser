@@ -1,6 +1,7 @@
 from email import parser
 from operator import index
 import queue
+import sys
 import customtkinter as ctk
 from tkinter import Image, filedialog, messagebox
 import pandas as pd
@@ -15,6 +16,13 @@ from engine_electricity import parse_electricity_pdf
 from engine_mobile import parse_mobile_pdf
 
 
+def resource_path(relative_path):
+        try:
+            base_path = sys._MEIPASS
+        except Exception:
+            base_path = os.path.abspath(".")
+        return os.path.join(base_path, relative_path)
+
 class BillParserApp(ctk.CTk):
 
     def __init__(self):
@@ -24,7 +32,7 @@ class BillParserApp(ctk.CTk):
         #self.configure(fg_color="#05192F")   # light grey corporate background
         self.configure(fg_color="#042345")
         
-        self.title("Bill Buddy - Billing Automation Tool")
+        self.title("BillCore - Automated Invoice Processing")
         self.geometry("650x500")
         self.generated_output_path = None
 
@@ -78,7 +86,7 @@ class BillParserApp(ctk.CTk):
     def create_widgets(self):
 
         # Title
-        title = ctk.CTkLabel(self, text="Bill Buddy", font=("Arial", 36, "bold"),text_color="#E2EDF9")
+        title = ctk.CTkLabel(self, text="BillCore - Automated Invoice Processing", font=("Arial", 36, "bold"),text_color="#E2EDF9")
         title.pack(pady=15)
 
         self.title_font = ctk.CTkFont(family="Segoe UI", size=22, weight="bold")
@@ -90,7 +98,7 @@ class BillParserApp(ctk.CTk):
         # BILL TYPE
         # -----------------------------
         frame_type = ctk.CTkFrame(self)
-        frame_type.pack(pady=10, fill="x", padx=20)
+        frame_type.pack(pady=10, fill="x", padx=0)
 
         ctk.CTkLabel(frame_type, text="Select Bill Type:", font=self.label_font).pack(anchor="w", padx=10, pady=5)
 
@@ -171,19 +179,19 @@ class BillParserApp(ctk.CTk):
         self.brand_frame = ctk.CTkFrame(self, fg_color="transparent")
         self.brand_frame.place(relx=1.0, rely=1.0, anchor="se", x=-10, y=-10)
 
-        # Logo (optional)
-        #self.logo_image = ctk.CTkImage(light_image=Image.open("logo.png"), size=(24, 24))
-        #self.logo_label = ctk.CTkLabel(self.brand_frame, image=self.logo_image, text="")
-        #self.logo_label.pack(side="left", padx=(0,5))
 
         self.brand_frame = ctk.CTkFrame(self, fg_color="transparent")
         self.brand_frame.place(relx=1.0, rely=1.0, anchor="se", x=-10, y=-10)
 
+        #self.logo_image = ctk.CTkImage(
+        #    light_image=Image.open(self.resource_path("logo2.png")),      
+        #    size=(24, 24)
+        #)
+
+        img = Image.open(resource_path("logo2.png")).resize((24, 24))
+
         self.logo_image = ctk.CTkImage(
-            light_image=Image.open("logo2.png"),
-            dark_image=Image.open("logo2.png"),
-            size=(24, 24)
-        )
+        light_image=img)
 
         self.logo_label = ctk.CTkLabel(self.brand_frame, image=self.logo_image, text="")
         self.logo_label.pack(side="left", padx=(0,5))
@@ -247,6 +255,7 @@ class BillParserApp(ctk.CTk):
         else:
             messagebox.showerror("Error", "Output file not found.")
 
+    
     
     # -----------------------------
     # MAIN PARSING LOGIC
@@ -409,7 +418,7 @@ class BillParserApp(ctk.CTk):
         df_final.to_excel(output_path, index=False)
 
         #messagebox.showinfo("Success", f"Parsing completed successfully.\n\nOutput saved to:\n{output_path}")
-        self.after(0, lambda: messagebox.showinfo("Success", f"Process completed successfully.\n\nOutput saved to:\n{output_path}"))
+        #self.after(0, lambda: messagebox.showinfo("Success", f"Process completed successfully.\n\nOutput saved to:\n{output_path}"))
 
         self.generated_output_path = output_path
         self.view_button.configure(state="normal")
@@ -421,7 +430,7 @@ class BillParserApp(ctk.CTk):
         #self.progress_label.configure(text="")
 
         self.after(0, lambda: self.status_label.configure(text="Process Complete!"))
-        self.after(5000, lambda: self.status_label.configure(text=""))
+        self.after(10000, lambda: self.status_label.configure(text=""))
         self.after(0, lambda: self.progress_label.configure(text=""))
         self.after(0, lambda: self.process_button.configure(state="normal"))
         
