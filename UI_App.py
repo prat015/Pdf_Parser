@@ -1,13 +1,12 @@
-from email import parser
 from operator import index
 import queue
 import sys
 import customtkinter as ctk
 from tkinter import Image, filedialog, messagebox
-import pandas as pd
 import os
 import threading
 from PIL import Image
+import pandas as pd
 
 # -----------------------------
 # IMPORT YOUR PARSERS HERE
@@ -28,6 +27,7 @@ class BillParserApp(ctk.CTk):
     def __init__(self):
         super().__init__()
         
+        self.withdraw()
         self.progress_queue = queue.Queue()
         #self.configure(fg_color="#05192F")   # light grey corporate background
         self.configure(fg_color="#042345")
@@ -47,8 +47,8 @@ class BillParserApp(ctk.CTk):
         self.pdf_folder = ""
         self.site_file = ""
         self.output_file = ""
-     
         self.create_widgets()
+        self.after(100, self.deiconify)
         self.after(100, self.check_progress_queue)
 
     def check_progress_queue(self):
@@ -73,12 +73,17 @@ class BillParserApp(ctk.CTk):
         while not self.progress_queue.empty():
             self.progress_queue.get()
 
+        if not self.pdf_folder or not self.site_file :
+            messagebox.showerror("Error", "Please select all required files.")
+            #self.after(0, lambda: self.status_label.configure(text="Error: Please select all required files"))
+            return
+        
         # Reset UI
-        self.progress_bar.set(0)
         self.progress_label.configure(text="")
         self.status_label.configure(text="")
 
-        self.progress_bar.pack(pady=10, fill="x", padx=40)
+        self.progress_bar.set(0)
+        self.progress_bar.pack(pady=10, fill="x", padx=150)
 
         thread = threading.Thread(target=self.run_parsing, daemon=True)
         thread.start()
@@ -98,12 +103,12 @@ class BillParserApp(ctk.CTk):
         # BILL TYPE
         # -----------------------------
         frame_type = ctk.CTkFrame(self)
-        frame_type.pack(pady=10, fill="x", padx=0)
+        frame_type.pack(pady=5, fill="x", padx=20)
 
         ctk.CTkLabel(frame_type, text="Select Bill Type:", font=self.label_font).pack(anchor="w", padx=10, pady=5)
 
-        ctk.CTkRadioButton(frame_type, text="Electricity Bills", variable=self.bill_type, value="electricity", font=self.label_font, fg_color="#05192F").pack(anchor="w", padx=20)
-        ctk.CTkRadioButton(frame_type, text="Mobile Bills", variable=self.bill_type, value="mobile", font=self.label_font, fg_color="#05192F").pack(anchor="w", padx=20)
+        ctk.CTkRadioButton(frame_type, text="Electricity Bills", variable=self.bill_type, value="electricity", font=self.label_font, fg_color="#05192F", command=self.update_pdf_label).pack(anchor="w", padx=20)
+        ctk.CTkRadioButton(frame_type, text="Mobile Bills", variable=self.bill_type, value="mobile", font=self.label_font, fg_color="#05192F", command=self.update_pdf_label).pack(anchor="w", padx=20)
 
         # -----------------------------
         # PDF FOLDER
@@ -111,7 +116,9 @@ class BillParserApp(ctk.CTk):
         frame_pdf = ctk.CTkFrame(self)
         frame_pdf.pack(pady=10, fill="x", padx=20)
 
-        ctk.CTkLabel(frame_pdf, text="Select PDF Folder:", font=self.label_font).pack(anchor="w", padx=10, pady=5)
+        #ctk.CTkLabel(frame_pdf, text="Select PDF Folder:", font=self.label_font).pack(anchor="w", padx=10, pady=5)
+        self.pdf_title_label = ctk.CTkLabel(frame_pdf,text="Select PDF Folder for Electricity Bills:",font=self.label_font)
+        self.pdf_title_label.pack(anchor="w", padx=10, pady=5)
         ctk.CTkButton(frame_pdf, text="Browse", command=self.select_pdf_folder, font=self.button_font, fg_color="#042345").pack(anchor="w", padx=20)
 
         # FIX: Dedicated label for PDF folder
@@ -132,35 +139,34 @@ class BillParserApp(ctk.CTk):
         self.site_label.pack(anchor="w", padx=20, pady=5)
 
         # -----------------------------
-        # OUTPUT FILE
-        # -----------------------------
-        #frame_output = ctk.CTkFrame(self)
-        #frame_output.pack(pady=10, fill="x", padx=20)
-
-        #ctk.CTkLabel(frame_output, text="Select Output Excel File:", font=("Arial", 14)).pack(anchor="w", padx=10, pady=5)
-        #ctk.CTkButton(frame_output, text="Browse", command=self.select_output_file).pack(anchor="w", padx=20)
-
-        # FIX: Dedicated label for output file
-        #self.output_label = ctk.CTkLabel(frame_output, text="No output file selected", font=("Arial", 12))
-        #self.output_label.pack(anchor="w", padx=20, pady=5)
-
-        # -----------------------------
         # RUN BUTTON
         # -----------------------------
         #ctk.CTkButton(self, text="Process Bills", font=self.button_font, fg_color="#14324F", command=lambda: threading.Thread(target=self.run_parsing).start()).pack(pady=10)
 
-        self.process_button =  ctk.CTkButton(self, text="Process Bills", font=self.button_font, fg_color="#14324F", command=self.start_parsing)
-        self.process_button.pack(pady=10)
+        self.button_frame = ctk.CTkFrame(self)
+        self.button_frame.pack(fill="x", padx=20, pady=10)
 
-        self.view_button = ctk.CTkButton(self, text="View Generated File", font=self.button_font, fg_color="#14324F", command=self.open_output_file, state="disabled")
-        self.view_button.pack(pady=10)
+        self.button_frame.grid_columnconfigure(0, weight=1)
+        self.button_frame.grid_columnconfigure(1, weight=0)
+        self.button_frame.grid_columnconfigure(2, weight=0)
+        self.button_frame.grid_columnconfigure(3, weight=1)
+
+        self.process_button =  ctk.CTkButton(self.button_frame, text="Process Bills", width=200, font=self.button_font, fg_color="#14324F", command=self.start_parsing)
+        #self.process_button.pack(side="left", pady=10)
+
+        self.view_button = ctk.CTkButton(self.button_frame, text="View Generated File", width=250, font=self.button_font, fg_color="#14324F", command=self.open_output_file)
+        #self.view_button.pack(side="left", pady=10)
+
+        self.process_button.grid(row=0, column=1, padx=20, pady=10)
+        self.view_button.grid(row=0, column=2, padx=20, pady=10)
 
         # -----------------------------
         # PROGRESS BAR
         # -----------------------------
+        
         self.progress_bar = ctk.CTkProgressBar(self)
         self.progress_bar.set(0)
-        self.progress_bar.pack(pady=10, fill="x", padx=40)
+        self.progress_bar.pack(pady=10, fill="x", padx=150)
         self.progress_bar.pack_forget()   # hide initially
 
         self.progress_label = ctk.CTkLabel(self, text="", font=("Segoe UI", 14), text_color="#E2EDF9")
@@ -177,16 +183,9 @@ class BillParserApp(ctk.CTk):
 
         # Bottom-right branding frame
         self.brand_frame = ctk.CTkFrame(self, fg_color="transparent")
-        self.brand_frame.place(relx=1.0, rely=1.0, anchor="se", x=-10, y=-10)
+        self.brand_frame.pack(side="bottom", fill="x", pady=10, padx=20)
 
-
-        self.brand_frame = ctk.CTkFrame(self, fg_color="transparent")
-        self.brand_frame.place(relx=1.0, rely=1.0, anchor="se", x=-10, y=-10)
-
-        #self.logo_image = ctk.CTkImage(
-        #    light_image=Image.open(self.resource_path("logo2.png")),      
-        #    size=(24, 24)
-        #)
+        #self.brand_frame.pack_propagate(False)
 
         img = Image.open(resource_path("logo2.png")).resize((24, 24))
 
@@ -194,7 +193,7 @@ class BillParserApp(ctk.CTk):
         light_image=img)
 
         self.logo_label = ctk.CTkLabel(self.brand_frame, image=self.logo_image, text="")
-        self.logo_label.pack(side="left", padx=(0,5))
+        self.logo_label.pack(side="right", padx=(0,5))
 
         self.dev_label = ctk.CTkLabel(
             self.brand_frame,
@@ -202,9 +201,14 @@ class BillParserApp(ctk.CTk):
             font=("Segoe UI", 12),
             text_color="#959494"
         )
-        self.dev_label.pack(side="left")
+        self.dev_label.pack(side="right")
+                
 
-
+    def update_pdf_label(self):
+        if self.bill_type.get() == "mobile":
+            self.pdf_title_label.configure(text="Select PDF file for Mobile Bill:")
+        else:
+            self.pdf_title_label.configure(text="Select PDF Folder for Electricity Bills:")
         
 
     # -----------------------------
@@ -250,6 +254,8 @@ class BillParserApp(ctk.CTk):
             self.output_label.configure(text=self.output_file)
 
     def open_output_file(self):
+        if not self.generated_output_path:
+            return
         if self.generated_output_path and os.path.exists(self.generated_output_path):
             os.startfile(self.generated_output_path)  # Windows only
         else:
@@ -261,14 +267,8 @@ class BillParserApp(ctk.CTk):
     # MAIN PARSING LOGIC
     # -----------------------------
     def run_parsing(self):
-
-        print("DEBUG: run_parsing started")
-
-        self.process_button.configure(state="disabled")
-        
-        if not self.pdf_folder or not self.site_file :
-            messagebox.showerror("Error", "Please select all required files.")
-            return
+       
+        #self.process_button.configure(state="disabled")
 
         rows = []
 
@@ -288,16 +288,20 @@ class BillParserApp(ctk.CTk):
         if self.bill_type.get() == "mobile" and hasattr(self, "single_pdf_file") and self.single_pdf_file:
             # Mobile → only one file
             print(f"DEBUG: Processing Mobile file")
+            self.after(0, lambda: self.status_label.configure(text="Processing..."))
             pdf_files = [os.path.basename(self.single_pdf_file)]
         else:
             # Electricity → all PDFs in folder
             print(f"DEBUG: Processing Electricity folder")
+            self.after(0, lambda: self.status_label.configure(text="Processing..."))
             pdf_files = [f for f in os.listdir(self.pdf_folder) if f.lower().endswith(".pdf")]
 
         total_files = len(pdf_files)
 
         if total_files == 0:
+            self.after(0, lambda: self.status_label.configure(text=""))
             messagebox.showerror("Error", "No PDF files found in the selected folder.")
+            self.progress_bar.pack_forget()
             return
 
         for index, filename in enumerate(pdf_files, start=1):
@@ -373,6 +377,9 @@ class BillParserApp(ctk.CTk):
             messagebox.showerror(
                 "Invalid Mapping File",
                 f"The selected site mapping file does not contain the required column: '{merge_key}'.")
+            self.progress_bar.pack_forget()
+            self.progress_label.configure(text="")
+            self.status_label.configure(text="")
             return
 
         # -----------------------------
@@ -384,6 +391,9 @@ class BillParserApp(ctk.CTk):
                 f"The parsed data does not contain the required field '{merge_key}'. "
                 "Please verify the PDF format."
             )
+            self.progress_bar.pack_forget()
+            self.progress_label.configure(text="")
+            self.status_label.configure(text="")
             return
     
         df_output[merge_key] = df_output[merge_key].astype(str).str.strip()
@@ -421,7 +431,7 @@ class BillParserApp(ctk.CTk):
         #self.after(0, lambda: messagebox.showinfo("Success", f"Process completed successfully.\n\nOutput saved to:\n{output_path}"))
 
         self.generated_output_path = output_path
-        self.view_button.configure(state="normal")
+        #self.view_button.configure(state="normal")
 
         # Hide progress bar after completion
         #self.progress_bar.pack_forget()
