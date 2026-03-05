@@ -7,6 +7,8 @@ import os
 import threading
 from PIL import Image
 import pandas as pd
+from license_manager import validate_license
+
 
 # -----------------------------
 # IMPORT YOUR PARSERS HERE
@@ -26,7 +28,19 @@ class BillParserApp(ctk.CTk):
 
     def __init__(self):
         super().__init__()
-        
+
+        # LICENSE CHECK
+        valid, msg = validate_license()
+        if not valid:
+            if msg == "License expired":
+                self.after(200, self.show_renew_popup)
+            else:
+                messagebox.showerror("License Error", msg)
+                self.after(200, self.safe_exit)
+            return
+
+
+
         self.withdraw()
         self.progress_queue = queue.Queue()
         #self.configure(fg_color="#05192F")   # light grey corporate background
@@ -37,7 +51,6 @@ class BillParserApp(ctk.CTk):
         self.generated_output_path = None
 
         self.after(100, lambda: self.state('zoomed'))
-
 
         ctk.set_appearance_mode("light")
         ctk.set_default_color_theme("dark-blue")
@@ -50,6 +63,27 @@ class BillParserApp(ctk.CTk):
         self.create_widgets()
         self.after(100, self.deiconify)
         self.after(100, self.check_progress_queue)
+
+    def safe_exit(self):
+        self.destroy()
+
+    
+    def show_renew_popup(self):
+        popup = ctk.CTkToplevel(self)
+        popup.title("License Expired")
+        popup.geometry("400x200")
+
+        ctk.CTkLabel(
+            popup,
+            text="Your license has expired.\nPlease contact support to renew.",
+            font=("Segoe UI", 16)
+        ).pack(pady=20)
+
+        ctk.CTkButton(
+            popup,
+            text="Close",
+            command=self.destroy
+        ).pack(pady=10)
 
     def check_progress_queue(self):
         try:
