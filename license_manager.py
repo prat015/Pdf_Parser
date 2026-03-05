@@ -9,7 +9,7 @@ SECRET_KEY = "NAVYA2025"  # keep private, don't share with client
 
 DEVELOPER_WHITELIST = {
     # Put YOUR machine ID here after step 4
-     #"1e52778e-075c-47fd-ae4c-cf751dad4b90",
+     "1e52778e-075c-47fd-ae4c-cf751dad4b90",
 }
 
 APP_FOLDER_NAME = "BillCore"   # or your app name
