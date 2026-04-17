@@ -68,12 +68,12 @@ def parse_mobile_page(text: str, site_mapping: dict | None = None) -> dict | Non
    
    # Required markers for Page 1
     required_markers = [
-        "Monthly Charge",
+        #"Monthly Charge",
         "Total Recurring Charges",
         "Amount Excluding VAT and Excise Duty",
         "EXCISE - 15%",
         "VAT - 16%",
-        "Amount Due Ksh"
+        "Amount Due"
     ]
 
     # Reject pages missing any Page‑1 markers (Page 2 never has all of them)
@@ -93,7 +93,7 @@ def parse_mobile_page(text: str, site_mapping: dict | None = None) -> dict | Non
         "excise_15": r"EXCISE\s*-\s*15%\s+([\d,\.]+)",
         "amount_incl_excise": r"Amount Including Excise Duty\s+([\d,\.]+)",
         "vat_16": r"VAT\s*-\s*16%\s+([\d,\.]+)",
-        "total": r"Amount Due Ksh\s+([\d,\.]+)",
+        "total": r"Amount\s+Due.*?Ksh\s+([\d,\.]+)",
         "qr_code_date": r"Date:\s*(\d{2}/\d{2}/\d{4})",
         "tis_serial_no": r"TIS Serial No:\s*([A-Z0-9]+)",
         "cu_invoice_no": r"CU Invoice No:\s*([A-Z0-9]+)",
@@ -102,7 +102,7 @@ def parse_mobile_page(text: str, site_mapping: dict | None = None) -> dict | Non
     result = {}
 
     for key, pattern in patterns.items():
-        m = re.search(pattern, clean)
+        m = re.search(pattern, clean, re.DOTALL)
         result[key] = m.group(1) if m else ""
 
     # Supplier name
@@ -122,6 +122,21 @@ def parse_mobile_page(text: str, site_mapping: dict | None = None) -> dict | Non
     return result
 
 
+def extract_qr_fields(text):
+    patterns = {
+        "qr_code_date": r"Date:\s*(\d{2}/\d{2}/\d{4})",
+        "tis_serial_no": r"TIS Serial No:\s*([A-Z0-9]+)",
+        "cu_invoice_no": r"CU Invoice No:\s*([A-Z0-9]+)",
+    }
+
+    result = {}
+    for key, pattern in patterns.items():
+        m = re.search(pattern, text)
+        if m:
+            result[key] = m.group(1)
+
+    return result
+
 # ---------------------------------------------------------
 # Main parser
 # ---------------------------------------------------------
@@ -130,11 +145,16 @@ def parse_mobile_pdf(pdf_path: str, mapping_path: str | None = None,  ui_callbac
     site_mapping = {}
     texts = extract_page_texts(pdf_path, ui_callback=ui_callback)
 
+    qr_data = {}
+    for t in texts:
+        qr_data.update(extract_qr_fields(t))
+    
     results = []
     total_texts = len(texts)
     for idx, text in enumerate(texts):
         row = parse_mobile_page(text, site_mapping)
         if row:
+            row.update(qr_data)
             results.append(row)
 
         if ui_callback and total_texts > 0:

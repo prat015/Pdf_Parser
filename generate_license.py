@@ -13,6 +13,6 @@ if __name__ == "__main__":
     # Fill these from client info
     client_machine_id = "ffca4489-074c-48de-b0d1-33d7c0ba8fec"
     license_key = "NAVYA-2025-CLIENT1-AB39X"
-    expiry = "2026-03-04"
+    expiry = "2027-03-04"
 
     make_license(client_machine_id, license_key, expiry)
