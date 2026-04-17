@@ -8,7 +8,8 @@ import threading
 from PIL import Image
 import pandas as pd
 from license_manager import validate_license
-
+from openpyxl import load_workbook
+from openpyxl.styles import Font
 
 # -----------------------------
 # IMPORT YOUR PARSERS HERE
@@ -295,28 +296,80 @@ class BillParserApp(ctk.CTk):
         else:
             messagebox.showerror("Error", "Output file not found.")
 
-    
+    def format_output(self, output_path):
+        wb = load_workbook(output_path)
+        ws = wb.active
+
+        # Freeze header
+        ws.freeze_panes = "A2"
+        # Enable filters
+        ws.auto_filter.ref = ws.dimensions
+        
+        for cell in ws[1]:
+            cell.font = Font(bold=True)
+
+        for column in ws.columns:
+            max_length = 0
+            column_letter = column[0].column_letter
+            
+            for cell in column:
+                if cell.value:
+                    max_length = max(max_length, len(str(cell.value)))
+
+            adjusted_width = min(max_length + 2, 40)
+            ws.column_dimensions[column_letter].width = adjusted_width
+
+            # Format currency columns automatically
+            currency_columns = [
+                "amount_excl_tax",
+                "excise_15",
+                "amount_incl_excise",
+                "vat_16",
+                "total",
+                "total_monthly_bill",
+                "vat",
+                "total_energy",
+                "total_levies",
+                "rounding_adjustment"
+            ]
+
+            for col in ws.iter_cols(1, ws.max_column):
+                header = col[0].value
+
+                if header in currency_columns:
+                    for cell in col[1:]:
+                        if cell.value is not None:
+                            # Convert string to numeric
+                            value = str(cell.value).replace(",", "")
+                            try:
+                                cell.value = float(value)
+                                cell.number_format = '#,##0.00'
+                            except:
+                                pass
+
+            # Format date columns
+            date_columns = [
+                "invoice_date",
+                "due_date",
+                "qr_code_date",
+                "date_of_issue"
+            ]
+
+            for col in ws.iter_cols(1, ws.max_column):
+                header = col[0].value
+
+                if header in date_columns:
+                    for cell in col[1:]:
+                        cell.number_format = 'DD/MM/YYYY'
+
+            wb.save(output_path)
     
     # -----------------------------
     # MAIN PARSING LOGIC
     # -----------------------------
     def run_parsing(self):
-       
-        #self.process_button.configure(state="disabled")
 
         rows = []
-
-        # Select parser
-        #parser = parse_electricity_pdf if self.bill_type.get() == "electricity" else parse_mobile_pdf
-
-
-        #pdf_files = [f for f in os.listdir(self.pdf_folder) if f.lower().endswith(".pdf")]
-        #if self.single_pdf_file:
-        #    # Mobile: single PDF file
-        #    pdf_files = [os.path.basename(self.single_pdf_file)]
-        #else:
-        #    # Electricity: folder of PDFs
-        #    pdf_files = [f for f in os.listdir(self.pdf_folder) if f.lower().endswith(".pdf")]
 
         # Determine which PDFs to process
         if self.bill_type.get() == "mobile" and hasattr(self, "single_pdf_file") and self.single_pdf_file:
@@ -436,9 +489,9 @@ class BillParserApp(ctk.CTk):
         # Merge
         df_final = df_output.merge(df_site, on=merge_key, how="left")
 
-        if "site_id_x" in df_final.columns and "site_id_y" in df_final.columns:
-            df_final = df_final.drop(columns=["site_id_x"])
-            df_final = df_final.rename(columns={"site_id_y": "site_id"})
+        # if "site_id_x" in df_final.columns and "site_id_y" in df_final.columns:
+        #     df_final = df_final.drop(columns=["site_id_x"])
+        #     df_final = df_final.rename(columns={"site_id_y": "site_id"})
         
         missing_count = df_final["site_id"].isna().sum() if "site_id" in df_final.columns else 0
 
@@ -460,6 +513,8 @@ class BillParserApp(ctk.CTk):
         output_path = os.path.join(self.pdf_folder, output_filename)
 
         df_final.to_excel(output_path, index=False)
+
+        self.format_output(output_path)
 
         #messagebox.showinfo("Success", f"Parsing completed successfully.\n\nOutput saved to:\n{output_path}")
         #self.after(0, lambda: messagebox.showinfo("Success", f"Process completed successfully.\n\nOutput saved to:\n{output_path}"))
