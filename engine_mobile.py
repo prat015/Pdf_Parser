@@ -154,7 +154,11 @@ def parse_mobile_pdf(pdf_path: str, mapping_path: str | None = None,  ui_callbac
     for idx, text in enumerate(texts):
         row = parse_mobile_page(text, site_mapping)
         if row:
-            row.update(qr_data)
+            page_qr_data = extract_qr_fields(text)
+
+            row["tis_serial_no"] = page_qr_data.get("tis_serial_no", "")
+            row["cu_invoice_no"] = page_qr_data.get("cu_invoice_no", "")
+
             results.append(row)
 
         if ui_callback and total_texts > 0:
