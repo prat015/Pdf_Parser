@@ -69,7 +69,7 @@ def parse_mobile_page(text: str, site_mapping: dict | None = None) -> dict | Non
    # Required markers for Page 1
     required_markers = [
         #"Monthly Charge",
-        "Total Recurring Charges",
+        "Total Call Charges",
         "Amount Excluding VAT and Excise Duty",
         "EXCISE - 15%",
         "VAT - 16%",
